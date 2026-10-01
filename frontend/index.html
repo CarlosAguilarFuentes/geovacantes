@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GeoVacantes | Movilidad y Asignación Docente</title>
+  <meta name="description" content="Plataforma de consulta geográfica para procesos de movilidad docente, localización de vacantes cercanas y estimación de rutas y tiempos de traslado.">
+
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+
+  <!-- Estilos propios -->
+  <link rel="stylesheet" href="/css/variables.css">
+  <link rel="stylesheet" href="/css/layout.css">
+  <link rel="stylesheet" href="/css/components.css">
+</head>
+<body>
+  <div class="app-container">
+
+    <!-- Barra de Navegación Superior -->
+    <header class="top-navbar">
+      <div class="brand-section">
+        <div class="brand-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path>
+            <circle cx="12" cy="10" r="3"></circle>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1>GeoVacantes <span class="brand-badge">Movilidad Docente</span></h1>
+          <span class="brand-subtitle">Consulta de plazas, distancias y tiempos de traslado</span>
+        </div>
+      </div>
+
+      <!-- Banner del Evento Activo -->
+      <div class="event-banner-pill" id="active-event-pill">
+        <span class="event-pulse-dot"></span>
+        <span class="event-title-text" id="event-name-display">Cargando convocatoria de vacantes...</span>
+      </div>
+
+      <!-- Acciones de Navegación -->
+      <div class="navbar-actions">
+        <button class="btn btn-secondary" id="btn-open-comparator" title="Comparar escuelas seleccionadas">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg>
+          <span>Comparar (<span id="compare-count">0</span>)</span>
+        </button>
+
+        <button class="btn btn-primary" id="btn-open-preference-list" title="Mi lista de opciones priorizadas">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+          <span>Mi Lista (<span id="fav-count">0</span>)</span>
+        </button>
+
+        <button class="btn btn-secondary btn-sm" id="btn-open-disclaimer" title="Aviso legal y términos de uso" style="color: var(--accent-amber); border-color: rgba(245, 158, 11, 0.35);">
+          <span>⚠️ Aviso</span>
+        </button>
+
+        <button class="btn btn-secondary btn-sm" id="btn-open-admin" title="Panel de Administración">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+          <span>Admin</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Espacio Principal de Trabajo -->
+    <main class="main-workspace">
+
+      <!-- Panel Lateral Izquierdo: Origen + Filtros + Lista -->
+      <aside class="sidebar-panel">
+
+        <!-- Banner de Selección de Origen -->
+        <div class="origin-card-banner">
+          <div class="origin-header-row">
+            <span class="origin-label">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+              Lugar de Origen Seleccionado
+            </span>
+            <span class="origin-coords-text" id="origin-coords-display">16.7530, -93.1150</span>
+          </div>
+
+          <div class="origin-location-name" id="origin-name-display">
+            📍 Tuxtla Gutiérrez (Centro)
+          </div>
+
+          <div class="origin-btn-group">
+            <button class="btn btn-secondary btn-sm" id="btn-gps-origin" title="Detectar mi ubicación con el GPS del dispositivo">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/><circle cx="12" cy="12" r="7"/></svg>
+              Mi Ubicación
+            </button>
+            <button class="btn btn-secondary btn-sm" id="btn-change-origin-map" title="Hacer clic en el mapa para fijar nuevo origen">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+              Fijar en Mapa
+            </button>
+            <button class="btn btn-secondary btn-sm" id="btn-search-city" title="Seleccionar municipio o ciudad común">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              Ciudad
+            </button>
+          </div>
+        </div>
+
+        <!-- Búsqueda y Filtros -->
+        <div class="search-filter-section">
+          <div class="search-input-wrapper">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input type="text" id="search-input" class="search-input" placeholder="Buscar por CCT, escuela, localidad o asignatura...">
+          </div>
+
+          <div class="filters-row">
+            <select id="filter-nivel" class="filter-select">
+              <option value="">Todos los niveles</option>
+            </select>
+            <select id="filter-turno" class="filter-select">
+              <option value="">Todos los turnos</option>
+            </select>
+            <select id="filter-municipio" class="filter-select">
+              <option value="">Todos los municipios</option>
+            </select>
+            <select id="filter-zona-economica" class="filter-select">
+              <option value="">Todas las Z.E.</option>
+            </select>
+            <select id="filter-tipo" class="filter-select">
+              <option value="">Definitivas y Temporales</option>
+              <option value="Definitiva">Solo Definitivas</option>
+              <option value="Temporal">Solo Temporales</option>
+            </select>
+          </div>
+
+          <!-- Umbral de Tiempo Máximo de Traslado -->
+          <div class="travel-threshold-row">
+            <span>Tiempo Máx: <strong id="time-filter-label">Sin límite</strong></span>
+            <div class="slider-container">
+              <input type="range" id="time-filter-slider" min="15" max="180" step="15" value="180">
+              <button class="btn btn-secondary btn-sm" id="btn-reset-time-filter" style="padding: 2px 6px;">Reset</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Encabezado de Resultados, Descarte en Vivo y Ordenamiento -->
+        <div class="results-header-bar" style="flex-wrap: wrap; gap: 0.5rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+            <span id="results-count-text">Mostrando 0 vacantes</span>
+            <div id="discarded-summary-bar" style="display: none; align-items: center; gap: 0.4rem;">
+              <span class="discard-status-badge" id="discarded-counter-badge" title="Vacantes tachadas o tomadas localmente">
+                ❌ <span id="discarded-count-text">0</span> descartadas
+              </span>
+              <button class="btn-toggle-hide-discarded" id="btn-toggle-hide-discarded" title="Alternar entre ver u ocultar las plazas descartadas">
+                <span id="toggle-hide-icon">👁️</span>
+                <span id="toggle-hide-label">Ocultar descartadas</span>
+              </button>
+              <button class="btn-restore-all-local" id="btn-restore-all-discarded" title="Restablecer todas las vacantes descartadas localmente">
+                ↺ Restablecer
+              </button>
+            </div>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 0.4rem; margin-left: auto;">
+            <label for="sort-select">Ordenar:</label>
+            <select id="sort-select" class="sort-select">
+              <option value="distance">Distancia vial (km)</option>
+              <option value="time">Tiempo estimado (min)</option>
+              <option value="groups">Más grupos escolares</option>
+              <option value="name">Nombre de escuela</option>
+              <option value="municipio">Municipio</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Lista de Tarjetas de Vacante -->
+        <div class="vacancies-scroll-container" id="vacancies-container">
+          <!-- Renderizado dinámico desde app.js -->
+        </div>
+
+      </aside>
+
+      <!-- Panel del Mapa Interactivo -->
+      <section class="map-panel">
+        <div id="leaflet-map"></div>
+
+        <!-- Botones Flotantes en el Mapa -->
+        <div class="map-floating-overlay">
+          <button class="map-btn" id="btn-recenter-origin" title="Centrar mapa en mi origen">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+            Mi Origen
+          </button>
+          <button class="map-btn" id="btn-fit-all-schools" title="Ver todas las escuelas en el mapa">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
+            Ver Todas
+          </button>
+          <button class="map-btn" id="btn-toggle-tiles" title="Alternar estilo de mapa (OpenStreetMap / Topográfico)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+            Capas
+          </button>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- DRAWER: Mi Lista de Opciones Priorizadas -->
+    <div class="drawer-panel" id="preference-drawer">
+      <div class="drawer-header">
+        <div>
+          <h2>⭐ Mi Lista de Opciones</h2>
+          <span style="font-size: 0.78rem; color: var(--text-muted);">Organiza tus alternativas y tacha las que vayan tomando en vivo</span>
+        </div>
+        <button class="btn btn-secondary btn-sm" id="btn-close-drawer">✕</button>
+      </div>
+
+      <!-- Barra de estado de descarte dentro de Mi Lista -->
+      <div id="drawer-discard-bar" style="display: none; padding: 0.6rem 1rem; background: rgba(244, 63, 94, 0.08); border-bottom: 1px solid rgba(244, 63, 94, 0.2); justify-content: space-between; align-items: center; font-size: 0.76rem;">
+        <span style="color: #ff6b81; font-weight: 600;">
+          ❌ <span id="drawer-discarded-count">0</span> de tus opciones ya fueron descartadas
+        </span>
+        <button class="btn btn-secondary btn-sm" id="btn-drawer-restore-discarded" style="font-size: 0.72rem; padding: 2px 8px; border-color: rgba(244, 63, 94, 0.3); color: #ff6b81;">
+          ↺ Deshacer descartes
+        </button>
+      </div>
+
+      <!-- Barra de Ordenamiento sincronizado de Mi Lista -->
+      <div class="drawer-sort-toolbar" style="padding: 0.55rem 1rem; background: rgba(255, 255, 255, 0.02); border-bottom: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: space-between; font-size: 0.76rem;">
+        <div style="display: flex; align-items: center; gap: 0.4rem; color: var(--text-muted);">
+          <span>Ordenar por:</span>
+          <select id="drawer-sort-select" class="sort-select" style="font-size: 0.75rem; padding: 2px 6px;">
+            <option value="distance">Distancia vial (km)</option>
+            <option value="time">Tiempo estimado (min)</option>
+            <option value="groups">Más grupos escolares</option>
+            <option value="name">Nombre de escuela</option>
+            <option value="municipio">Municipio</option>
+          </select>
+        </div>
+        <button class="btn btn-secondary btn-sm" id="btn-sync-drawer-sort" title="Reordenar mi lista según el orden del filtro actual" style="font-size: 0.72rem; padding: 2px 7px;">
+          ⚡ Ordenar
+        </button>
+      </div>
+
+      <div class="drawer-body" id="drawer-items-list">
+        <!-- Renderizado dinámico -->
+      </div>
+
+      <div class="modal-footer" style="flex-direction: column; gap: 0.5rem; align-items: stretch;">
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="btn btn-primary" id="btn-print-preference-list" style="flex: 1;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            Imprimir Hoja de Prelación
+          </button>
+          <button class="btn btn-secondary" id="btn-export-csv" title="Descargar como archivo CSV / Excel">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            CSV
+          </button>
+        </div>
+        <button class="btn btn-secondary btn-sm" id="btn-clear-favorites" style="color: var(--accent-rose); border-color: rgba(244,63,94,0.3);">
+          Limpiar Mi Lista
+        </button>
+      </div>
+    </div>
+
+    <!-- MODAL: Comparador Cara a Cara -->
+    <div class="modal-backdrop" id="comparator-modal">
+      <div class="modal-window" style="max-width: 960px;">
+        <div class="modal-header">
+          <h2>⚖️ Comparador de Opciones</h2>
+          <button class="btn btn-secondary btn-sm" id="btn-close-comparator">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="comparator-matrix" id="comparator-matrix-content">
+            <!-- Renderizado dinámico -->
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="btn-clear-comparator">Limpiar selección</button>
+          <button class="btn btn-primary" id="btn-close-comparator-btn">Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: Panel Administrativo -->
+    <div class="modal-backdrop" id="admin-modal">
+      <div class="modal-window">
+        <div class="modal-header">
+          <h2>⚙️ Administración de GeoVacantes</h2>
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <div id="admin-user-badge" style="display: none; align-items: center; gap: 0.5rem; font-size: 0.8rem; color: var(--accent-cyan); background: rgba(6, 182, 212, 0.12); border: 1px solid rgba(6, 182, 212, 0.25); padding: 4px 10px; border-radius: var(--radius-full);">
+              <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--accent-emerald);"></span>
+              <span id="admin-current-user">ing.caf.23@gmail.com</span>
+              <button class="btn btn-secondary btn-sm" id="btn-admin-logout" title="Cerrar sesión" style="padding: 2px 7px; font-size: 0.75rem; margin-left: 4px; background: rgba(255,255,255,0.08);">Salir</button>
+            </div>
+            <button class="btn btn-secondary btn-sm" id="btn-close-admin" title="Cerrar ventana">✕</button>
+          </div>
+        </div>
+
+        <div class="modal-body">
+          <!-- Pantalla de Login Admin Formal -->
+          <div id="admin-login-view" style="max-width: 440px; margin: 1.5rem auto; padding: 2rem; background: var(--bg-glass-card); border: 1px solid var(--border-medium); border-radius: var(--radius-lg); box-shadow: var(--shadow-md);">
+            <div style="text-align: center; margin-bottom: 1.5rem;">
+              <div style="width: 52px; height: 52px; margin: 0 auto 0.85rem auto; border-radius: var(--radius-full); background: linear-gradient(135deg, rgba(6,182,212,0.2), rgba(59,130,246,0.2)); display: flex; align-items: center; justify-content: center; border: 1px solid rgba(6,182,212,0.4); font-size: 1.4rem;">
+                🔐
+              </div>
+              <h3 style="font-size: 1.2rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.35rem;">Acceso Administrativo</h3>
+              <p style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.45; margin: 0;">
+                Módulo reservado para la actualización de catálogos escolares, publicación de vacantes y configuración de servidores.
+              </p>
+            </div>
+
+            <form id="admin-login-form" onsubmit="return false;" style="display: flex; flex-direction: column; gap: 1rem;">
+              <div>
+                <label for="admin-user-input" style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-main); margin-bottom: 0.4rem;">
+                  Correo electrónico o Usuario
+                </label>
+                <div style="position: relative;">
+                  <input 
+                    type="text" 
+                    id="admin-user-input" 
+                    class="search-input" 
+                    placeholder="ing.caf.23@gmail.com" 
+                    autocomplete="username" 
+                    style="width: 100%; box-sizing: border-box; padding-left: 2.25rem;"
+                    required
+                  >
+                  <span style="position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); font-size: 0.95rem; opacity: 0.65; pointer-events: none;">👤</span>
+                </div>
+              </div>
+
+              <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                  <label for="admin-password-input" style="font-size: 0.8rem; font-weight: 600; color: var(--text-main);">
+                    Contraseña
+                  </label>
+                </div>
+                <div style="position: relative;">
+                  <input 
+                    type="password" 
+                    id="admin-password-input" 
+                    class="search-input" 
+                    placeholder="••••••••••••" 
+                    autocomplete="current-password" 
+                    style="width: 100%; box-sizing: border-box; padding-left: 2.25rem; padding-right: 2.5rem;"
+                    required
+                  >
+                  <span style="position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); font-size: 0.95rem; opacity: 0.65; pointer-events: none;">🔑</span>
+                  <button 
+                    type="button" 
+                    id="btn-toggle-pwd" 
+                    aria-label="Mostrar u ocultar contraseña"
+                    title="Mostrar contraseña"
+                    style="position: absolute; right: 0.6rem; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 4px 6px; font-size: 0.85rem;"
+                  >👁️</button>
+                </div>
+              </div>
+
+              <div id="admin-login-error" style="display: none; padding: 0.65rem 0.85rem; border-radius: var(--radius-sm); background: rgba(244, 63, 94, 0.12); border: 1px solid rgba(244, 63, 94, 0.35); color: var(--accent-rose); font-size: 0.8rem; line-height: 1.4;"></div>
+
+              <button type="submit" class="btn btn-primary" id="btn-admin-login-submit" style="width: 100%; justify-content: center; padding: 0.75rem; font-weight: 700; margin-top: 0.35rem;">
+                <span>Ingresar al Sistema</span> →
+              </button>
+            </form>
+
+            <div style="margin-top: 1.25rem; text-align: center; border-top: 1px solid var(--border-subtle); padding-top: 0.85rem;">
+              <span style="font-size: 0.72rem; color: var(--text-dim);">
+                🔒 Conexión segura con validación de credenciales en servidor
+              </span>
+            </div>
+          </div>
+
+          <!-- Pantalla de Dashboard Admin (Autenticado) -->
+          <div id="admin-dashboard-view" style="display: none;">
+            <div class="admin-tabs">
+              <button class="admin-tab-btn active" data-tab="tab-schools">Catálogo de Escuelas</button>
+              <button class="admin-tab-btn" data-tab="tab-vacancies">Cargar Vacantes</button>
+              <button class="admin-tab-btn" data-tab="tab-routing">API de Rutas OSRM</button>
+              <button class="admin-tab-btn" data-tab="tab-stats">Estadísticas</button>
+            </div>
+
+            <!-- Tab 1: Carga de Escuelas -->
+            <div class="admin-tab-pane" id="tab-schools">
+              <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                Sube el archivo CSV o Excel (<strong>.xlsx, .xls</strong>) con el catálogo de escuelas. El sistema detecta los nombres de columnas de forma automática (sin importar mayúsculas o acentos).
+              </p>
+              
+              <div style="background: rgba(0,0,0,0.2); border-radius: var(--radius-md); padding: 0.75rem 1rem; margin-bottom: 1rem; font-size: 0.8rem; line-height: 1.5;">
+                <div style="font-weight: 700; color: var(--accent-cyan); margin-bottom: 0.35rem;">Columnas requeridas y opcionales:</div>
+                <ul style="margin: 0; padding-left: 1.2rem; color: var(--text-main);">
+                  <li><strong>CCT</strong> <span style="color: var(--accent-rose); font-weight: 700;">(Obligatoria)</span>: Clave del Centro de Trabajo (ej. <code>07DPR0521Z</code>).</li>
+                  <li><strong>Latitud</strong> <span style="color: var(--accent-rose); font-weight: 700;">(Obligatoria)</span>: Coordenada Y (ej. <code>16.75782</code>).</li>
+                  <li><strong>Longitud</strong> <span style="color: var(--accent-rose); font-weight: 700;">(Obligatoria)</span>: Coordenada X (ej. <code>-93.12354</code>).</li>
+                  <li><strong>Nombre</strong>: Nombre de la escuela o plantel (ej. <code>Escuela Primaria Camilo Pintado</code>).</li>
+                  <li><strong>Zona Económica</strong>: Porcentaje asignado al centro (ej. <code>60%</code> o <code>100%</code>).</li>
+                  <li><strong>Nivel</strong>: Nivel educativo (ej. <code>Primaria</code>, <code>Preescolar</code>, <code>Secundaria Técnica</code>, <code>Telesecundaria</code>).</li>
+                  <li><strong>Turno</strong>: <code>Matutino</code>, <code>Vespertino</code>, <code>Nocturno</code>, <code>Jornada Completa</code>.</li>
+                  <li><strong>Grupos</strong>: Cantidad de grupos (ej. <code>6</code>, <code>12</code>).</li>
+                  <li><strong>Municipio</strong>: Municipio de Chiapas donde se ubica (ej. <code>Tuxtla Gutiérrez</code>, <code>Suchiapa</code>).</li>
+                  <li><strong>Lugar / Localidad</strong>: Colonia, ejido, barrio o dirección local (ej. <code>Copoya</code>, <code>Col. Terán</code>).</li>
+                  <li><strong>Zona Escolar</strong>: Número de zona escolar (ej. <code>012</code>, <code>021</code>).</li>
+                  <li><strong>Sector</strong>: Sector escolar (ej. <code>01</code>, <code>04</code>).</li>
+                  <li><strong>Estado</strong>: Entidad federativa (por defecto: <code>Chiapas</code>).</li>
+                </ul>
+              </div>
+
+              <div class="dropzone" id="schools-dropzone">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="color: var(--accent-cyan); margin-bottom: 0.5rem;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <p>Haz clic o arrastra aquí tu archivo CSV o Excel de escuelas</p>
+                <input type="file" id="schools-file-input" accept=".csv, .xlsx, .xls" style="display: none;">
+              </div>
+              <div id="schools-upload-status" style="margin-top: 1rem; font-size: 0.85rem;"></div>
+            </div>
+
+            <!-- Tab 2: Carga de Vacantes -->
+            <div class="admin-tab-pane" id="tab-vacancies" style="display: none;">
+              <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                Carga la lista oficial de vacantes o plazas disponibles para el próximo evento de asignación.
+              </p>
+
+              <div style="background: rgba(0,0,0,0.2); border-radius: var(--radius-md); padding: 0.75rem 1rem; margin-bottom: 1rem; font-size: 0.8rem; line-height: 1.5;">
+                <div style="font-weight: 700; color: var(--accent-amber); margin-bottom: 0.35rem;">Columnas para la lista de vacantes:</div>
+                <ul style="margin: 0; padding-left: 1.2rem; color: var(--text-main);">
+                  <li><strong>CCT</strong> <span style="color: var(--accent-rose); font-weight: 700;">(Obligatoria)</span>: Debe coincidir con alguna escuela registrada en el catálogo previo.</li>
+                  <li><strong>Tipo de Vacante</strong>: <code>Definitiva</code> o <code>Temporal</code>.</li>
+                  <li><strong>Función / Cargo</strong>: Puesto de la plaza (ej. <code>Docente Frente a Grupo</code>, <code>Profesor de Asignatura</code>, <code>Director</code>).</li>
+                  <li><strong>Asignatura</strong>: Materia o especialidad (ej. <code>Educación Primaria General</code>, <code>Matemáticas</code>, <code>Español</code>).</li>
+                  <li><strong>Horas</strong>: Número de horas semanales (ej. <code>0</code> para plaza de jornada, o <code>19</code>, <code>30</code>, <code>40</code> para secundarias).</li>
+                  <li><strong>Motivo</strong>: Causa de la vacancia (ej. <code>Jubilación</code>, <code>Renuncia</code>, <code>Incapacidad Médica</code>, <code>Defunción</code>).</li>
+                  <li><strong>Observaciones</strong>: Notas aclaratorias, condiciones del turno o requisitos específicos.</li>
+                </ul>
+              </div>
+
+              <div class="dropzone" id="vacancies-dropzone">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="color: var(--accent-amber); margin-bottom: 0.5rem;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <p>Haz clic o arrastra aquí el archivo CSV o Excel de vacantes del evento</p>
+                <input type="file" id="vacancies-file-input" accept=".csv, .xlsx, .xls" style="display: none;">
+              </div>
+              <div id="vacancies-upload-status" style="margin-top: 1rem; font-size: 0.85rem;"></div>
+            </div>
+
+            <!-- Tab 3: Configuración de Rutas Carlos Aguilar -->
+            <div class="admin-tab-pane" id="tab-routing" style="display: none;">
+              <div style="display: flex; flex-direction: column; gap: 1rem;">
+                <div>
+                  <label style="font-size: 0.82rem; font-weight: 600;">URL del Servidor de Rutas OSRM:</label>
+                  <input type="text" id="cfg-routing-url" class="search-input" value="https://rutas.carlosaguilar.mx">
+                </div>
+                <div>
+                  <label style="font-size: 0.82rem; font-weight: 600;">Llave Privada (X-API-Key):</label>
+                  <input type="password" id="cfg-routing-key" class="search-input" placeholder="Ingresa tu llave privada para rutas.carlosaguilar.mx">
+                  <span style="font-size: 0.75rem; color: var(--text-dim);">Esta llave se enviará en la cabecera <code>X-API-Key</code> al consultar rutas.</span>
+                </div>
+                <div style="display: flex; gap: 0.75rem;">
+                  <button class="btn btn-primary" id="btn-save-routing-config">Guardar Configuración</button>
+                  <button class="btn btn-secondary" id="btn-test-routing-conn">Probar Conexión OSRM</button>
+                </div>
+                <div id="routing-test-result" style="padding: 0.75rem; border-radius: var(--radius-md); font-size: 0.82rem; display: none;"></div>
+              </div>
+            </div>
+
+            <!-- Tab 4: Estadísticas & Datos -->
+            <div class="admin-tab-pane" id="tab-stats" style="display: none;">
+              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem;">
+                <div style="padding: 1rem; background: var(--bg-card); border-radius: var(--radius-md); border: 1px solid var(--border-subtle); text-align: center;">
+                  <div style="font-size: 1.5rem; font-weight: 800; color: var(--accent-cyan);" id="stat-total-schools">-</div>
+                  <div style="font-size: 0.75rem; color: var(--text-muted);">Escuelas en BD</div>
+                </div>
+                <div style="padding: 1rem; background: var(--bg-card); border-radius: var(--radius-md); border: 1px solid var(--border-subtle); text-align: center;">
+                  <div style="font-size: 1.5rem; font-weight: 800; color: var(--accent-amber);" id="stat-total-vacancies">-</div>
+                  <div style="font-size: 0.75rem; color: var(--text-muted);">Vacantes Registradas</div>
+                </div>
+                <div style="padding: 1rem; background: var(--bg-card); border-radius: var(--radius-md); border: 1px solid var(--border-subtle); text-align: center;">
+                  <div style="font-size: 1.5rem; font-weight: 800; color: var(--accent-emerald);" id="stat-total-routes">-</div>
+                  <div style="font-size: 0.75rem; color: var(--text-muted);">Rutas en Caché</div>
+                </div>
+              </div>
+
+              <div style="border-top: 1px solid var(--border-subtle); padding-top: 1rem;">
+                <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                  ¿Deseas restablecer los datos de demostración de escuelas de Chiapas y vacantes del proceso 2026?
+                </p>
+                <button class="btn btn-secondary btn-sm" id="btn-reseed-data">Restablecer Datos de Muestra (Chiapas)</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: Búsqueda y Selección de Ciudad / Lugar de Origen -->
+    <div class="modal-backdrop" id="city-origin-modal">
+      <div class="modal-window" style="max-width: 520px;">
+        <div class="modal-header">
+          <h2>📍 Buscar Lugar o Ciudad de Origen</h2>
+          <button class="btn btn-secondary btn-sm" id="btn-close-city-modal">✕</button>
+        </div>
+        <div class="modal-body" style="display: flex; flex-direction: column; gap: 0.75rem;">
+          <div>
+            <label style="font-size: 0.82rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 0.4rem;">
+              Escribe colonia, calle, parque o localidad de referencia:
+            </label>
+            <div class="search-input-wrapper">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              <input type="text" id="city-search-input" class="search-input" placeholder="Ej. Terán, Parque de la Marimba, Plan de Ayala, Chiapa...">
+            </div>
+            <div id="city-search-loading" style="display: none; font-size: 0.78rem; color: var(--accent-cyan); margin-top: 0.35rem;">
+              Buscando coincidencias con geo.carlosaguilar.mx...
+            </div>
+          </div>
+
+          <!-- Resultados dinámicos de geocodificación -->
+          <div id="city-search-results" style="display: none; max-height: 220px; overflow-y: auto; flex-direction: column; gap: 0.4rem; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 0.5rem; background: var(--bg-card);">
+          </div>
+
+          <div style="border-top: 1px solid var(--border-subtle); padding-top: 0.65rem;">
+            <div style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; margin-bottom: 0.5rem;">
+              O selecciona un punto de partida rápido:
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.45rem;">
+              <button class="btn btn-secondary btn-sm city-preset-btn" data-lat="16.7530" data-lon="-93.1150" data-name="Tuxtla Gutiérrez (Centro)">
+                Parque Central Tuxtla
+              </button>
+              <button class="btn btn-secondary btn-sm city-preset-btn" data-lat="16.7553" data-lon="-93.1234" data-name="Parque de la Marimba, Tuxtla">
+                Parque de la Marimba
+              </button>
+              <button class="btn btn-secondary btn-sm city-preset-btn" data-lat="16.7412" data-lon="-93.1598" data-name="Tuxtla Gutiérrez (Terán)">
+                Terán (Tuxtla Pte)
+              </button>
+              <button class="btn btn-secondary btn-sm city-preset-btn" data-lat="16.7084" data-lon="-93.0135" data-name="Chiapa de Corzo (Centro)">
+                Chiapa de Corzo
+              </button>
+              <button class="btn btn-secondary btn-sm city-preset-btn" data-lat="16.7972" data-lon="-93.2721" data-name="Berriozábal (Centro)">
+                Berriozábal
+              </button>
+              <button class="btn btn-secondary btn-sm city-preset-btn" data-lat="16.7381" data-lon="-92.6341" data-name="San Cristóbal de Las Casas (Centro)">
+                San Cristóbal
+              </button>
+              <button class="btn btn-secondary btn-sm city-preset-btn" data-lat="16.7621" data-lon="-93.3745" data-name="Ocozocoautla (Coita)">
+                Ocozocoautla (Coita)
+              </button>
+              <button class="btn btn-secondary btn-sm city-preset-btn" data-lat="16.6253" data-lon="-93.1012" data-name="Suchiapa (Centro)">
+                Suchiapa
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: Advertencia de Inicio y Deslinde de Responsabilidad -->
+    <div class="modal-backdrop" id="disclaimer-modal">
+      <div class="modal-window disclaimer-modal-window">
+        <div class="modal-header disclaimer-header">
+          <div style="display: flex; align-items: center; gap: 0.85rem;">
+            <div class="disclaimer-icon-badge">⚠️</div>
+            <div>
+              <h2 style="font-size: 1.1rem; color: var(--accent-amber); margin: 0;">Aviso Importante al Docente</h2>
+              <span style="font-size: 0.78rem; color: var(--text-muted);">Términos de uso y responsabilidad de la información</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-body" style="padding: 1.25rem 1.5rem;">
+          <div class="disclaimer-card-box">
+            <span style="font-size: 1.2rem; flex-shrink: 0;">📍</span>
+            <div>
+              <strong>Información geográfica y vial referencial</strong>
+              <p>
+                Las distancias por carretera, tiempos de traslado y coordenadas se calculan mediante servicios cartográficos abiertos y modelos de ruteo automáticos. Por tanto, <strong>pueden presentar variaciones</strong> respecto a condiciones reales de tráfico, obras viales, clima o caminos rurales.
+              </p>
+            </div>
+          </div>
+
+          <div class="disclaimer-card-box">
+            <span style="font-size: 1.2rem; flex-shrink: 0;">📋</span>
+            <div>
+              <strong>Catálogo de vacantes y convocatorias</strong>
+              <p>
+                Los datos de claves de centro de trabajo (CCT), turnos, zonas económicas y materias corresponden a listas preliminares o de apoyo. La única lista con validez jurídica y administrativa definitiva es la emitida por la autoridad educativa correspondiente en el evento de asignación.
+              </p>
+            </div>
+          </div>
+
+          <div class="disclaimer-card-box" style="border-color: rgba(245, 158, 11, 0.3); background: rgba(245, 158, 11, 0.05);">
+            <span style="font-size: 1.2rem; flex-shrink: 0;">⚖️</span>
+            <div>
+              <strong style="color: #fbbf24;">Responsabilidad del participante</strong>
+              <p style="color: #fde68a;">
+                Esta herramienta es de uso estrictamente orientativo y de consulta personal. <strong>La elección, aceptación o descarte de cualquier plaza o vacante es responsabilidad única y exclusiva del usuario</strong> que toma la decisión ante la mesa de asignación.
+              </p>
+            </div>
+          </div>
+
+          <label class="disclaimer-checkbox-label" id="label-disclaimer-agree">
+            <input type="checkbox" id="checkbox-disclaimer-agree">
+            <span>
+              He leído y comprendo que esta información es de carácter orientativo y que <strong>las opciones que escoja son bajo mi propia responsabilidad</strong>.
+            </span>
+          </label>
+        </div>
+
+        <div class="modal-footer" style="padding: 1rem 1.5rem; justify-content: space-between; background: var(--bg-card);">
+          <span style="font-size: 0.75rem; color: var(--text-dim);" id="disclaimer-hint-text">Marca la casilla para continuar</span>
+          <button class="btn btn-primary" id="btn-accept-disclaimer" disabled style="opacity: 0.5; cursor: not-allowed; min-width: 140px;">
+            Aceptar y Continuar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contenedor Toast -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Área de Impresión Oficial (Solo visible al imprimir) -->
+    <div id="print-area">
+      <h1 style="font-size: 18pt; margin-bottom: 4px;">PROCESO DE ASIGNACIÓN Y MOVILIDAD DOCENTE</h1>
+      <h2 style="font-size: 13pt; margin-bottom: 12px; color: #444;" id="print-event-title">HOJA DE PRELACIÓN PERSONAL DE VACANTES</h2>
+      <p style="font-size: 10pt; margin-bottom: 14px;">
+        <strong>Origen de referencia:</strong> <span id="print-origin-name">Tuxtla Gutiérrez</span> | 
+        <strong>Fecha de consulta:</strong> <span id="print-date"></span>
+      </p>
+      <table style="width: 100%; border-collapse: collapse; font-size: 9.5pt;" border="1" cellpadding="6">
+        <thead>
+          <tr style="background-color: #f2f2f2;">
+            <th style="width: 35px;">Opción</th>
+            <th style="width: 80px;">CCT</th>
+            <th>Escuela</th>
+            <th style="width: 80px;">Nivel</th>
+            <th style="width: 75px;">Turno</th>
+            <th>Municipio / Lugar</th>
+            <th style="width: 65px;">Distancia</th>
+            <th style="width: 65px;">Tiempo</th>
+            <th style="width: 85px;">Tipo Vacante</th>
+          </tr>
+        </thead>
+        <tbody id="print-table-body">
+          <!-- Generado dinámicamente -->
+        </tbody>
+      </table>
+      <p style="font-size: 8pt; margin-top: 20px; color: #666;">
+        Documento personal de apoyo generado por la Plataforma GeoVacantes. Los tiempos y distancias corresponden al recorrido carretero estimado.
+      </p>
+    </div>
+
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>
