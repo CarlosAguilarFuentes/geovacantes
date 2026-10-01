@@ -1084,15 +1084,19 @@ class GeoVacantesApp {
 
       if (mode === "map") {
         if (this.map && this.map.map) {
-          setTimeout(() => {
-            this.map.map.invalidateSize();
-            if (this.selectedCct) {
-              const school = this.currentVacancies.find(v => v.cct === this.selectedCct);
-              if (school && school.latitud && school.longitud) {
-                this.map.map.panTo([school.latitud, school.longitud]);
+          const resizeMap = () => {
+            if (this.map && this.map.map) {
+              this.map.map.invalidateSize();
+              if (this.selectedCct) {
+                const school = this.currentVacancies.find(v => v.cct === this.selectedCct);
+                if (school && school.latitud && school.longitud) {
+                  this.map.map.panTo([school.latitud, school.longitud]);
+                }
               }
             }
-          }, 80);
+          };
+          setTimeout(resizeMap, 60);
+          setTimeout(resizeMap, 250);
         }
       }
     };
