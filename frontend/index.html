@@ -109,32 +109,44 @@
             <input type="text" id="search-input" class="search-input" placeholder="Buscar por CCT, escuela, localidad o asignatura...">
           </div>
 
-          <div class="filters-row">
-            <select id="filter-nivel" class="filter-select">
-              <option value="">Todos los niveles</option>
-            </select>
-            <select id="filter-turno" class="filter-select">
-              <option value="">Todos los turnos</option>
-            </select>
-            <select id="filter-municipio" class="filter-select">
-              <option value="">Todos los municipios</option>
-            </select>
-            <select id="filter-zona-economica" class="filter-select">
-              <option value="">Todas las Z.E.</option>
-            </select>
-            <select id="filter-tipo" class="filter-select">
-              <option value="">Definitivas y Temporales</option>
-              <option value="Definitiva">Solo Definitivas</option>
-              <option value="Temporal">Solo Temporales</option>
-            </select>
-          </div>
+          <!-- Botón de apertura de filtros en móvil -->
+          <button type="button" class="btn-toggle-filters-mobile" id="btn-toggle-filters-mobile" aria-expanded="false">
+            <span style="display: flex; align-items: center; gap: 0.45rem;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+              <span>Filtros (<span id="mobile-filter-badge">Todos</span>)</span>
+            </span>
+            <span id="filter-chevron-icon">▼</span>
+          </button>
 
-          <!-- Umbral de Tiempo Máximo de Traslado -->
-          <div class="travel-threshold-row">
-            <span>Tiempo Máx: <strong id="time-filter-label">Sin límite</strong></span>
-            <div class="slider-container">
-              <input type="range" id="time-filter-slider" min="15" max="180" step="15" value="180">
-              <button class="btn btn-secondary btn-sm" id="btn-reset-time-filter" style="padding: 2px 6px;">Reset</button>
+          <!-- Bloque de Filtros (Siempre visible en PC, colapsable en móvil) -->
+          <div class="filters-collapsible-wrapper" id="filters-collapsible-wrapper">
+            <div class="filters-row">
+              <select id="filter-nivel" class="filter-select">
+                <option value="">Todos los niveles</option>
+              </select>
+              <select id="filter-turno" class="filter-select">
+                <option value="">Todos los turnos</option>
+              </select>
+              <select id="filter-municipio" class="filter-select">
+                <option value="">Todos los municipios</option>
+              </select>
+              <select id="filter-zona-economica" class="filter-select">
+                <option value="">Todas las Z.E.</option>
+              </select>
+              <select id="filter-tipo" class="filter-select">
+                <option value="">Definitivas y Temporales</option>
+                <option value="Definitiva">Solo Definitivas</option>
+                <option value="Temporal">Solo Temporales</option>
+              </select>
+            </div>
+
+            <!-- Umbral de Tiempo Máximo de Traslado -->
+            <div class="travel-threshold-row">
+              <span>Tiempo Máx: <strong id="time-filter-label">Sin límite</strong></span>
+              <div class="slider-container">
+                <input type="range" id="time-filter-slider" min="15" max="180" step="15" value="180">
+                <button class="btn btn-secondary btn-sm" id="btn-reset-time-filter" style="padding: 2px 6px;">Reset</button>
+              </div>
             </div>
           </div>
         </div>
@@ -195,7 +207,35 @@
             Capas
           </button>
         </div>
+
+        <!-- Ficha Flotante Móvil de Ruta / Escuela Seleccionada en Mapa -->
+        <div class="mobile-map-route-card" id="mobile-map-route-card" style="display: none;">
+          <div style="flex: 1; min-width: 0;">
+            <div class="mobile-map-school-name" id="mobile-route-school-name">Escuela</div>
+            <div class="mobile-map-school-meta" id="mobile-route-school-meta">-- km • -- min</div>
+          </div>
+          <div style="display: flex; gap: 0.4rem; align-items: center;">
+            <button class="btn btn-primary btn-sm" id="btn-mobile-return-list" style="padding: 0.35rem 0.65rem; font-size: 0.76rem;">
+              Ver Ficha
+            </button>
+            <button class="btn btn-secondary btn-sm" id="btn-close-mobile-route-card" style="padding: 0.35rem 0.5rem; font-size: 0.76rem;">
+              ✕
+            </button>
+          </div>
+        </div>
       </section>
+
+      <!-- Switcher Flotante Móvil: Alternar entre Lista y Mapa -->
+      <div class="mobile-view-switcher" id="mobile-view-switcher">
+        <button class="mobile-switch-btn active" id="btn-mobile-show-list" title="Ver lista de vacantes">
+          <span class="switch-icon">📋</span>
+          <span class="switch-label">Lista (<span id="mobile-list-count">0</span>)</span>
+        </button>
+        <button class="mobile-switch-btn" id="btn-mobile-show-map" title="Ver vacantes en el mapa interactivo">
+          <span class="switch-icon">🗺️</span>
+          <span class="switch-label">Mapa</span>
+        </button>
+      </div>
 
     </main>
 

@@ -52,6 +52,7 @@ class GeoVacantesApp {
     this.initMap();
     this.initAdmin();
     this.initEventListeners();
+    this.initMobileView();
     this.subscribeState();
     this.checkDisclaimerNotice();
 
@@ -214,6 +215,24 @@ class GeoVacantesApp {
     const countEl = document.getElementById("results-count-text");
     if (countEl) {
       countEl.textContent = `Mostrando ${this.currentVacancies.length} vacantes`;
+    }
+
+    const mobileListCount = document.getElementById("mobile-list-count");
+    if (mobileListCount) {
+      mobileListCount.textContent = this.currentVacancies.length;
+    }
+
+    const mobileFilterBadge = document.getElementById("mobile-filter-badge");
+    if (mobileFilterBadge) {
+      let activeCount = 0;
+      if (this.filters.search) activeCount++;
+      if (this.filters.nivel) activeCount++;
+      if (this.filters.turno) activeCount++;
+      if (this.filters.municipio) activeCount++;
+      if (this.filters.zona_economica) activeCount++;
+      if (this.filters.tipo_vacante) activeCount++;
+      if (this.filters.max_time_min) activeCount++;
+      mobileFilterBadge.textContent = activeCount > 0 ? `${activeCount} activos` : "Todos";
     }
 
     // Renderizar tarjetas
@@ -514,6 +533,21 @@ class GeoVacantesApp {
       const formattedTime = formatDuration(route.duration_seconds / 60);
       const srcText = route.is_simulated ? "(Estimación aproximada)" : "(API Ruteo Carretero Carlos Aguilar)";
       this.showToast(`🚗 Ruta a ${route.school_name}: ${km} km • ${formattedTime} ${srcText}`);
+
+      // Si está en pantalla móvil, cambiar automáticamente al mapa y mostrar la ficha flotante
+      if (window.innerWidth <= 900) {
+        if (this.setMobileViewMode) {
+          this.setMobileViewMode("map");
+        }
+        const routeCard = document.getElementById("mobile-map-route-card");
+        const nameEl = document.getElementById("mobile-route-school-name");
+        const metaEl = document.getElementById("mobile-route-school-meta");
+        if (routeCard && nameEl && metaEl) {
+          nameEl.textContent = route.school_name || cct;
+          metaEl.textContent = `⏱️ ${formattedTime} • 🚗 ${km} km`;
+          routeCard.style.display = "flex";
+        }
+      }
     }
   }
 
@@ -1026,6 +1060,90 @@ class GeoVacantesApp {
         disclaimerModal.classList.add("open");
       }, 200);
     }
+  }
+
+  initMobileView() {
+    this.mobileViewMode = "list"; // "list" | "map"
+    const workspace = document.querySelector(".main-workspace");
+    const btnList = document.getElementById("btn-mobile-show-list");
+    const btnMap = document.getElementById("btn-mobile-show-map");
+    const btnToggleFilters = document.getElementById("btn-toggle-filters-mobile");
+    const filtersWrapper = document.getElementById("filters-collapsible-wrapper");
+    const btnReturnList = document.getElementById("btn-mobile-return-list");
+    const btnCloseRouteCard = document.getElementById("btn-close-mobile-route-card");
+    const routeCard = document.getElementById("mobile-map-route-card");
+
+    const updateView = (mode) => {
+      this.mobileViewMode = mode;
+      if (workspace) {
+        workspace.classList.remove("mobile-mode-list", "mobile-mode-map");
+        workspace.classList.add(mode === "map" ? "mobile-mode-map" : "mobile-mode-list");
+      }
+      if (btnList) btnList.classList.toggle("active", mode === "list");
+      if (btnMap) btnMap.classList.toggle("active", mode === "map");
+
+      if (mode === "map") {
+        if (this.map && this.map.map) {
+          setTimeout(() => {
+            this.map.map.invalidateSize();
+            if (this.selectedCct) {
+              const school = this.currentVacancies.find(v => v.cct === this.selectedCct);
+              if (school && school.latitud && school.longitud) {
+                this.map.map.panTo([school.latitud, school.longitud]);
+              }
+            }
+          }, 80);
+        }
+      }
+    };
+
+    if (btnList) btnList.addEventListener("click", () => updateView("list"));
+    if (btnMap) btnMap.addEventListener("click", () => updateView("map"));
+
+    if (btnReturnList) {
+      btnReturnList.addEventListener("click", () => {
+        updateView("list");
+        if (this.selectedCct) {
+          const card = document.querySelector(`.vacancy-card[data-cct="${this.selectedCct}"]`);
+          if (card) {
+            setTimeout(() => card.scrollIntoView({ behavior: "smooth", block: "center" }), 100);
+          }
+        }
+      });
+    }
+
+    if (btnCloseRouteCard && routeCard) {
+      btnCloseRouteCard.addEventListener("click", () => {
+        routeCard.style.display = "none";
+      });
+    }
+
+    if (btnToggleFilters && filtersWrapper) {
+      btnToggleFilters.addEventListener("click", () => {
+        const isOpen = filtersWrapper.classList.toggle("open");
+        btnToggleFilters.setAttribute("aria-expanded", isOpen ? "true" : "false");
+        const chevron = document.getElementById("filter-chevron-icon");
+        if (chevron) chevron.textContent = isOpen ? "▲" : "▼";
+      });
+    }
+
+    // Configuración inicial en pantallas móviles
+    if (workspace && window.innerWidth <= 900) {
+      workspace.classList.add("mobile-mode-list");
+    }
+
+    window.addEventListener("resize", () => {
+      if (window.innerWidth > 900) {
+        if (workspace) workspace.classList.remove("mobile-mode-list", "mobile-mode-map");
+        if (this.map && this.map.map) this.map.map.invalidateSize();
+      } else {
+        if (workspace && !workspace.classList.contains("mobile-mode-list") && !workspace.classList.contains("mobile-mode-map")) {
+          workspace.classList.add(this.mobileViewMode === "map" ? "mobile-mode-map" : "mobile-mode-list");
+        }
+      }
+    });
+
+    this.setMobileViewMode = updateView;
   }
 
   showToast(message) {
