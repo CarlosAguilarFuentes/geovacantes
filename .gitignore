@@ -1,0 +1,30 @@
+# Entorno de variables sensibles (¡NUNCA SUBIR A GITHUB!)
+.env
+.env.local
+.env.*.local
+
+# Entornos virtuales Python
+venv/
+env/
+ENV/
+.venv/
+
+# Bytecode y cache de Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Archivos del sistema y del editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Logs y bases de datos locales temporales
+*.log
+*.sqlite3
+scratch/

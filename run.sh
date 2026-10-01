@@ -17,12 +17,23 @@ if [ ! -d "venv" ]; then
     venv/bin/pip install -r backend/requirements.txt
 fi
 
-echo "Verificando base de datos MySQL (XAMPP)..."
+# Cargar variables de entorno locales desde .env si existe
+if [ -f ".env" ]; then
+    set -a
+    source .env
+    set +a
+fi
+
+PORT="${PORT:-8000}"
+HOST="${HOST:-0.0.0.0}"
+
+echo "Verificando base de datos MySQL..."
 venv/bin/python3 -c "import sys; sys.path.insert(0, '.'); from backend.database import init_db; init_db()"
 
 echo ""
-echo "🚀 Servidor iniciado en http://localhost:8000"
-echo "👉 Abre http://localhost:8000 en tu navegador"
+echo "🚀 Servidor iniciado en http://localhost:${PORT}"
+echo "👉 Abre http://localhost:${PORT} en tu navegador"
 echo "=========================================================="
 
-exec venv/bin/uvicorn backend.app:app --host 0.0.0.0 --port 8000 --reload
+exec venv/bin/uvicorn backend.app:app --host "$HOST" --port "$PORT" --reload
+
