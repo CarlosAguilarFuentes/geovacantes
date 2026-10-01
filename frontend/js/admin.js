@@ -128,6 +128,19 @@ export class AdminModule {
     // Restablecer Datos de Muestra
     const btnReseed = document.getElementById("btn-reseed-data");
     if (btnReseed) btnReseed.addEventListener("click", () => this.reseedSampleData());
+
+    // Limpieza de datos (Preparación para Producción / Datos Reales)
+    const btnClearAll = document.getElementById("btn-clear-all-data");
+    const btnClearVacancies = document.getElementById("btn-clear-vacancies");
+    const btnClearRoutes = document.getElementById("btn-clear-routes");
+    const btnQuickClearSchools = document.getElementById("btn-quick-clear-schools");
+    const btnQuickClearVacancies = document.getElementById("btn-quick-clear-vacancies");
+
+    if (btnClearAll) btnClearAll.addEventListener("click", () => this.clearData("all"));
+    if (btnClearVacancies) btnClearVacancies.addEventListener("click", () => this.clearData("vacancies"));
+    if (btnClearRoutes) btnClearRoutes.addEventListener("click", () => this.clearData("routes"));
+    if (btnQuickClearSchools) btnQuickClearSchools.addEventListener("click", () => this.clearData("schools"));
+    if (btnQuickClearVacancies) btnQuickClearVacancies.addEventListener("click", () => this.clearData("vacancies"));
   }
 
   async verifySession() {
@@ -476,6 +489,45 @@ export class AdminModule {
       this.onDataChanged();
     } catch (err) {
       alert("Error: " + err.message);
+    }
+  }
+
+  async clearData(target) {
+    let confirmMsg = "";
+    if (target === "all") {
+      confirmMsg = "⚠️ ¿ESTÁS SEGURO DE ELIMINAR TODOS LOS DATOS DE PRUEBA?\n\nEsta acción borrará todas las escuelas, todas las vacantes y la caché de rutas para que puedas comenzar desde cero con datos reales.\n\n¿Deseas continuar?";
+    } else if (target === "schools") {
+      confirmMsg = "⚠️ ¿Deseas eliminar todo el catálogo de escuelas?\n\nNota: Esto también eliminará las vacantes asociadas y rutas en caché.";
+    } else if (target === "vacancies") {
+      confirmMsg = "¿Deseas eliminar únicamente todas las vacantes registradas?\n\nEl catálogo de escuelas se conservará intacto.";
+    } else if (target === "routes") {
+      confirmMsg = "¿Deseas vaciar la memoria caché de rutas calculadas?";
+    }
+
+    if (!confirm(confirmMsg)) return;
+
+    try {
+      const res = await fetch("/api/admin/clear-data", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${this.token}`
+        },
+        body: JSON.stringify({ target })
+      });
+
+      if (!this.checkAuthResponse(res)) return;
+
+      const data = await res.json();
+      if (data.success) {
+        alert("✓ " + data.message);
+        this.loadStats();
+        this.onDataChanged();
+      } else {
+        alert("❌ Error: " + (data.message || data.detail || "No se pudo completar la acción"));
+      }
+    } catch (err) {
+      alert("Error de conexión al limpiar datos: " + err.message);
     }
   }
 }

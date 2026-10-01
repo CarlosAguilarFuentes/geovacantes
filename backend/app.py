@@ -37,16 +37,17 @@ app.add_middleware(
 @app.on_event("startup")
 def startup_event():
     init_db()
-    # Si la tabla de escuelas está vacía, sembramos datos de prueba iniciales
-    conn = get_db_connection()
-    try:
-        with conn.cursor() as cursor:
-            cursor.execute("SELECT COUNT(*) AS total FROM schools;")
-            res = cursor.fetchone()
-            if res and res["total"] == 0:
-                seed_sample_data()
-    finally:
-        conn.close()
+    # Solo sembramos datos de muestra si está explícitamente habilitado en el entorno
+    if os.getenv("AUTO_SEED_SAMPLE_DATA", "false").lower() in ("true", "1", "yes"):
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT COUNT(*) AS total FROM schools;")
+                res = cursor.fetchone()
+                if res and res["total"] == 0:
+                    seed_sample_data()
+        finally:
+            conn.close()
 
 def format_duration(minutes: Optional[float]) -> str:
     if minutes is None:
@@ -85,6 +86,9 @@ class SettingsUpdateRequest(BaseModel):
 class AdminLoginRequest(BaseModel):
     user: str
     password: str
+
+class ClearDataRequest(BaseModel):
+    target: str = "all"  # "all", "vacancies", "schools", "routes"
 
 class EventCreateRequest(BaseModel):
     nombre: str
@@ -551,6 +555,39 @@ def get_admin_stats():
 def reseed_sample_data():
     seed_sample_data()
     return {"success": True, "message": "Datos de muestra para Chiapas restablecidos con éxito."}
+
+@app.post("/api/admin/clear-data", dependencies=[Depends(verify_admin_token)])
+def clear_admin_data(req: ClearDataRequest):
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            if req.target == "vacancies":
+                cursor.execute("DELETE FROM vacancies;")
+                conn.commit()
+                return {"success": True, "message": "Todas las vacantes han sido eliminadas correctamente."}
+            elif req.target == "schools":
+                cursor.execute("DELETE FROM vacancies;")
+                cursor.execute("DELETE FROM schools;")
+                cursor.execute("DELETE FROM routes_cache;")
+                conn.commit()
+                return {"success": True, "message": "Catálogo de escuelas, vacantes asociadas y rutas en caché eliminadas."}
+            elif req.target == "routes":
+                cursor.execute("DELETE FROM routes_cache;")
+                conn.commit()
+                return {"success": True, "message": "Caché de rutas viales vaciado correctamente."}
+            elif req.target == "all":
+                cursor.execute("DELETE FROM vacancies;")
+                cursor.execute("DELETE FROM schools;")
+                cursor.execute("DELETE FROM routes_cache;")
+                conn.commit()
+                return {
+                    "success": True, 
+                    "message": "Se han eliminado todos los datos de prueba (escuelas, vacantes y rutas calculadas). La base de datos ha quedado limpia para tus datos reales."
+                }
+            else:
+                raise HTTPException(status_code=400, detail="Objetivo de eliminación no válido.")
+    finally:
+        conn.close()
 
 # --- Servir Frontend ---
 FRONTEND_DIR = BASE_DIR / "frontend"

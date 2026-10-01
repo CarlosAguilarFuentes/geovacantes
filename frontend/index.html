@@ -370,7 +370,7 @@
               <button class="admin-tab-btn active" data-tab="tab-schools">Catálogo de Escuelas</button>
               <button class="admin-tab-btn" data-tab="tab-vacancies">Cargar Vacantes</button>
               <button class="admin-tab-btn" data-tab="tab-routing">API de Rutas OSRM</button>
-              <button class="admin-tab-btn" data-tab="tab-stats">Estadísticas</button>
+              <button class="admin-tab-btn" data-tab="tab-stats">Mantenimiento y Limpieza</button>
             </div>
 
             <!-- Tab 1: Carga de Escuelas -->
@@ -404,6 +404,13 @@
                 <input type="file" id="schools-file-input" accept=".csv, .xlsx, .xls" style="display: none;">
               </div>
               <div id="schools-upload-status" style="margin-top: 1rem; font-size: 0.85rem;"></div>
+
+              <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.78rem; color: var(--text-muted);">¿Quieres limpiar el catálogo de escuelas de prueba antes de importar el oficial?</span>
+                <button class="btn btn-secondary btn-sm" id="btn-quick-clear-schools" style="color: var(--accent-rose); border-color: rgba(244,63,94,0.3); font-size: 0.78rem;">
+                  🗑️ Borrar Escuelas Actuales
+                </button>
+              </div>
             </div>
 
             <!-- Tab 2: Carga de Vacantes -->
@@ -431,6 +438,13 @@
                 <input type="file" id="vacancies-file-input" accept=".csv, .xlsx, .xls" style="display: none;">
               </div>
               <div id="vacancies-upload-status" style="margin-top: 1rem; font-size: 0.85rem;"></div>
+
+              <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.78rem; color: var(--text-muted);">¿Quieres limpiar la lista de vacantes actual para subir una nueva convocatoria?</span>
+                <button class="btn btn-secondary btn-sm" id="btn-quick-clear-vacancies" style="color: var(--accent-amber); border-color: rgba(245,158,11,0.3); font-size: 0.78rem;">
+                  🗑️ Borrar Vacantes Actuales
+                </button>
+              </div>
             </div>
 
             <!-- Tab 3: Configuración de Rutas Carlos Aguilar -->
@@ -453,28 +467,79 @@
               </div>
             </div>
 
-            <!-- Tab 4: Estadísticas & Datos -->
+            <!-- Tab 4: Estadísticas & Limpieza de Datos -->
             <div class="admin-tab-pane" id="tab-stats" style="display: none;">
+              <!-- Tarjetas de Métricas -->
               <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem;">
                 <div style="padding: 1rem; background: var(--bg-card); border-radius: var(--radius-md); border: 1px solid var(--border-subtle); text-align: center;">
-                  <div style="font-size: 1.5rem; font-weight: 800; color: var(--accent-cyan);" id="stat-total-schools">-</div>
-                  <div style="font-size: 0.75rem; color: var(--text-muted);">Escuelas en BD</div>
+                  <div style="font-size: 1.6rem; font-weight: 800; color: var(--accent-cyan);" id="stat-total-schools">-</div>
+                  <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; margin-top: 2px;">Escuelas en BD</div>
                 </div>
                 <div style="padding: 1rem; background: var(--bg-card); border-radius: var(--radius-md); border: 1px solid var(--border-subtle); text-align: center;">
-                  <div style="font-size: 1.5rem; font-weight: 800; color: var(--accent-amber);" id="stat-total-vacancies">-</div>
-                  <div style="font-size: 0.75rem; color: var(--text-muted);">Vacantes Registradas</div>
+                  <div style="font-size: 1.6rem; font-weight: 800; color: var(--accent-amber);" id="stat-total-vacancies">-</div>
+                  <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; margin-top: 2px;">Vacantes Registradas</div>
                 </div>
                 <div style="padding: 1rem; background: var(--bg-card); border-radius: var(--radius-md); border: 1px solid var(--border-subtle); text-align: center;">
-                  <div style="font-size: 1.5rem; font-weight: 800; color: var(--accent-emerald);" id="stat-total-routes">-</div>
-                  <div style="font-size: 0.75rem; color: var(--text-muted);">Rutas en Caché</div>
+                  <div style="font-size: 1.6rem; font-weight: 800; color: var(--accent-emerald);" id="stat-total-routes">-</div>
+                  <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; margin-top: 2px;">Rutas en Caché</div>
                 </div>
               </div>
 
-              <div style="border-top: 1px solid var(--border-subtle); padding-top: 1rem;">
-                <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.75rem;">
-                  ¿Deseas restablecer los datos de demostración de escuelas de Chiapas y vacantes del proceso 2026?
+              <!-- Sección de Limpieza y Producción -->
+              <div style="background: rgba(244, 63, 94, 0.06); border: 1px solid rgba(244, 63, 94, 0.25); border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 1.5rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem;">
+                  <span style="font-size: 1.15rem;">🧹</span>
+                  <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-main); margin: 0;">
+                    Preparación para Datos Reales
+                  </h4>
+                </div>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem; line-height: 1.45;">
+                  Utiliza estas opciones para depurar los datos de prueba y dejar la base de datos limpia antes de cargar tus archivos oficiales:
                 </p>
-                <button class="btn btn-secondary btn-sm" id="btn-reseed-data">Restablecer Datos de Muestra (Chiapas)</button>
+
+                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                  <!-- Eliminar Todo -->
+                  <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.22); padding: 0.85rem 1rem; border-radius: var(--radius-md); border: 1px solid rgba(244,63,94,0.2);">
+                    <div>
+                      <div style="font-weight: 700; font-size: 0.85rem; color: var(--accent-rose);">🗑️ Eliminar TODO (Escuelas, Vacantes y Rutas)</div>
+                      <div style="font-size: 0.75rem; color: var(--text-muted);">Limpia 100% la base de datos para comenzar desde cero con tu catálogo y vacantes reales.</div>
+                    </div>
+                    <button class="btn btn-sm" id="btn-clear-all-data" style="background: rgba(244,63,94,0.2); color: #f87171; border: 1px solid rgba(244,63,94,0.4); font-weight: 700; white-space: nowrap; padding: 0.45rem 0.9rem;">
+                      Limpiar Todo
+                    </button>
+                  </div>
+
+                  <!-- Eliminar Solo Vacantes -->
+                  <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.22); padding: 0.85rem 1rem; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+                    <div>
+                      <div style="font-weight: 700; font-size: 0.85rem; color: var(--accent-amber);">📋 Eliminar Solo Vacantes</div>
+                      <div style="font-size: 0.75rem; color: var(--text-muted);">Borra la lista de vacantes actual pero conserva las escuelas cargadas.</div>
+                    </div>
+                    <button class="btn btn-secondary btn-sm" id="btn-clear-vacancies" style="white-space: nowrap;">
+                      Vaciar Vacantes
+                    </button>
+                  </div>
+
+                  <!-- Vaciar Caché de Rutas -->
+                  <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.22); padding: 0.85rem 1rem; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+                    <div>
+                      <div style="font-weight: 700; font-size: 0.85rem; color: var(--accent-cyan);">⚡ Vaciar Caché de Rutas</div>
+                      <div style="font-size: 0.75rem; color: var(--text-muted);">Elimina los cálculos previos de distancias y tiempos para regenerarlos con tu servidor.</div>
+                    </div>
+                    <button class="btn btn-secondary btn-sm" id="btn-clear-routes" style="white-space: nowrap;">
+                      Vaciar Caché
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Bloque: Restaurar Demo (Opcional) -->
+              <div style="border-top: 1px solid var(--border-subtle); padding-top: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <div style="font-size: 0.82rem; font-weight: 600; color: var(--text-main);">¿Necesitas restaurar datos de demostración?</div>
+                  <div style="font-size: 0.75rem; color: var(--text-dim);">Carga de nuevo las 40 escuelas de Chiapas y vacantes de muestra para pruebas.</div>
+                </div>
+                <button class="btn btn-secondary btn-sm" id="btn-reseed-data" style="white-space: nowrap;">Restablecer Demo Chiapas</button>
               </div>
             </div>
           </div>
