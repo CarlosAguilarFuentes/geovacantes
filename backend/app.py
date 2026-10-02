@@ -97,6 +97,13 @@ class EventCreateRequest(BaseModel):
     descripcion: str = ""
     activo: bool = True
 
+class EventUpdateRequest(BaseModel):
+    nombre: Optional[str] = None
+    tipo: Optional[str] = None
+    fecha_evento: Optional[str] = None
+    descripcion: Optional[str] = None
+    activo: Optional[bool] = None
+
 # --- Endpoints Públicos de Consulta (Sin Login) ---
 
 @app.get("/api/health")
@@ -539,7 +546,13 @@ def get_admin_stats():
             cursor.execute("SELECT COUNT(*) AS total FROM routes_cache;")
             total_routes_cached = cursor.fetchone()["total"]
 
-            cursor.execute("SELECT * FROM events ORDER BY id DESC;")
+            cursor.execute("""
+                SELECT e.*, COUNT(v.id) AS total_vacancies 
+                FROM events e 
+                LEFT JOIN vacancies v ON e.id = v.event_id 
+                GROUP BY e.id 
+                ORDER BY e.id DESC;
+            """)
             events = cursor.fetchall()
 
             return {
@@ -548,6 +561,133 @@ def get_admin_stats():
                 "total_routes_cached": total_routes_cached,
                 "events": events
             }
+    finally:
+        conn.close()
+
+# --- Gestión de Eventos (Admin) ---
+
+@app.get("/api/admin/events", dependencies=[Depends(verify_admin_token)])
+def list_admin_events():
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT e.*, COUNT(v.id) AS total_vacancies 
+                FROM events e 
+                LEFT JOIN vacancies v ON e.id = v.event_id 
+                GROUP BY e.id 
+                ORDER BY e.id DESC;
+            """)
+            return {"events": cursor.fetchall()}
+    finally:
+        conn.close()
+
+@app.post("/api/admin/events", dependencies=[Depends(verify_admin_token)])
+def create_admin_event(req: EventCreateRequest):
+    if not req.nombre.strip():
+        raise HTTPException(status_code=400, detail="El nombre del evento es obligatorio.")
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            if req.activo:
+                cursor.execute("UPDATE events SET activo = 0;")
+            cursor.execute("""
+                INSERT INTO events (nombre, tipo, fecha_evento, activo, descripcion)
+                VALUES (%s, %s, %s, %s, %s);
+            """, (
+                req.nombre.strip(),
+                req.tipo.strip() if req.tipo else "Cambios de Adscripción",
+                req.fecha_evento.strip() if req.fecha_evento else "",
+                1 if req.activo else 0,
+                req.descripcion.strip() if req.descripcion else ""
+            ))
+            conn.commit()
+            new_id = cursor.lastrowid
+            return {"success": True, "message": "Evento creado exitosamente.", "id": new_id}
+    finally:
+        conn.close()
+
+@app.put("/api/admin/events/{event_id}", dependencies=[Depends(verify_admin_token)])
+def update_admin_event(event_id: int, req: EventUpdateRequest):
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT id FROM events WHERE id = %s;", (event_id,))
+            if not cursor.fetchone():
+                raise HTTPException(status_code=404, detail="Evento no encontrado.")
+
+            if req.activo is True:
+                cursor.execute("UPDATE events SET activo = 0 WHERE id != %s;", (event_id,))
+
+            updates = []
+            params = []
+            if req.nombre is not None:
+                if not req.nombre.strip():
+                    raise HTTPException(status_code=400, detail="El nombre del evento no puede estar vacío.")
+                updates.append("nombre = %s")
+                params.append(req.nombre.strip())
+            if req.tipo is not None:
+                updates.append("tipo = %s")
+                params.append(req.tipo.strip())
+            if req.fecha_evento is not None:
+                updates.append("fecha_evento = %s")
+                params.append(req.fecha_evento.strip())
+            if req.descripcion is not None:
+                updates.append("descripcion = %s")
+                params.append(req.descripcion.strip())
+            if req.activo is not None:
+                updates.append("activo = %s")
+                params.append(1 if req.activo else 0)
+
+            if updates:
+                params.append(event_id)
+                cursor.execute(f"UPDATE events SET {', '.join(updates)} WHERE id = %s;", tuple(params))
+                conn.commit()
+
+            return {"success": True, "message": "Evento actualizado correctamente."}
+    finally:
+        conn.close()
+
+@app.delete("/api/admin/events/{event_id}", dependencies=[Depends(verify_admin_token)])
+def delete_admin_event(event_id: int):
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT id, activo FROM events WHERE id = %s;", (event_id,))
+            ev = cursor.fetchone()
+            if not ev:
+                raise HTTPException(status_code=404, detail="Evento no encontrado.")
+
+            # Eliminar vacantes asociadas y evento (la foreign key cascade también lo hace)
+            cursor.execute("DELETE FROM vacancies WHERE event_id = %s;", (event_id,))
+            cursor.execute("DELETE FROM events WHERE id = %s;", (event_id,))
+            conn.commit()
+
+            # Si el evento eliminado era el activo, marcar el más reciente como activo si existe
+            if ev["activo"]:
+                cursor.execute("SELECT id FROM events ORDER BY id DESC LIMIT 1;")
+                latest = cursor.fetchone()
+                if latest:
+                    cursor.execute("UPDATE events SET activo = 1 WHERE id = %s;", (latest["id"],))
+                    conn.commit()
+
+            return {"success": True, "message": "Evento y sus vacantes eliminados exitosamente."}
+    finally:
+        conn.close()
+
+@app.post("/api/admin/events/{event_id}/activate", dependencies=[Depends(verify_admin_token)])
+def activate_admin_event(event_id: int):
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT id FROM events WHERE id = %s;", (event_id,))
+            if not cursor.fetchone():
+                raise HTTPException(status_code=404, detail="Evento no encontrado.")
+
+            cursor.execute("UPDATE events SET activo = 0;")
+            cursor.execute("UPDATE events SET activo = 1 WHERE id = %s;", (event_id,))
+            conn.commit()
+            return {"success": True, "message": "Evento activado correctamente para consulta pública."}
     finally:
         conn.close()
 

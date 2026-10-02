@@ -78,6 +78,7 @@ class GeoVacantesApp {
   initAdmin() {
     this.admin = new AdminModule({
       onDataChanged: async () => {
+        await this.loadActiveEvent();
         await this.loadFilterOptions();
         await this.refreshVacancies();
       }
@@ -152,8 +153,12 @@ class GeoVacantesApp {
   async loadActiveEvent() {
     this.activeEvent = await this.routingService.fetchActiveEvent();
     const eventNameDisplay = document.getElementById("event-name-display");
-    if (eventNameDisplay && this.activeEvent) {
-      eventNameDisplay.textContent = `${this.activeEvent.nombre} (${this.activeEvent.total_vacancies || 0} plazas)`;
+    if (eventNameDisplay) {
+      if (this.activeEvent && this.activeEvent.nombre) {
+        eventNameDisplay.textContent = `${this.activeEvent.nombre} (${this.activeEvent.total_vacancies || 0} plazas)`;
+      } else {
+        eventNameDisplay.textContent = "Sin evento activo seleccionado";
+      }
     }
   }
 
