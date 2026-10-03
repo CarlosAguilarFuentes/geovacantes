@@ -797,22 +797,62 @@
 }
 
 @media print {
-  body * {
-    visibility: hidden;
+  @page {
+    size: letter portrait;
+    margin: 12mm 10mm;
   }
-  #print-area, #print-area * {
-    visibility: visible;
+
+  html, body {
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    background: white !important;
+    color: black !important;
   }
+
+  .app-container {
+    display: none !important;
+  }
+
+  body > *:not(#print-area) {
+    display: none !important;
+  }
+
   #print-area {
     display: block !important;
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    color: black !important;
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    color: #111 !important;
     background: white !important;
-    padding: 20px;
+    padding: 0 !important;
+    margin: 0 !important;
   }
+
+  #print-area * {
+    visibility: visible !important;
+  }
+
+  #print-area table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    page-break-inside: auto;
+  }
+
+  #print-area tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  #print-area thead {
+    display: table-header-group;
+  }
+
+  #print-area tfoot {
+    display: table-footer-group;
+  }
+
   .no-print {
     display: none !important;
   }
