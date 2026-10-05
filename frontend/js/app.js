@@ -4,6 +4,7 @@ import { PreferenceList } from './preference-list.js';
 import { Comparator } from './comparator.js';
 import { AdminModule } from './admin.js';
 import { DiscardedVacancies } from './discarded-service.js';
+import { CatalogPrint } from './catalog-print.js';
 
 export function formatDuration(minutes) {
   if (minutes === null || minutes === undefined || isNaN(minutes)) return '-';
@@ -27,6 +28,18 @@ class GeoVacantesApp {
 
     this.map = null;
     this.admin = null;
+    this.catalogPrint = new CatalogPrint({
+      routingService: this.routingService,
+      getActiveEvent: () => this.activeEvent,
+      getCurrentMainFilters: () => ({
+        search: this.filters.search,
+        nivel: this.filters.nivel,
+        turno: this.filters.turno,
+        municipio: this.filters.municipio,
+        zona_economica: this.filters.zona_economica,
+        tipo_vacante: this.filters.tipo_vacante
+      })
+    });
 
     this.currentVacancies = [];
     this.activeEvent = null;

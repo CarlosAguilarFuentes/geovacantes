@@ -791,15 +791,160 @@
   }
 }
 
-/* Área de Impresión Oficial (oculta en pantalla, visible solo al imprimir) */
-#print-area {
+/* ==========================================================================
+   HERRAMIENTA: IMPRESIÓN DEL CATÁLOGO GENERAL DE VACANTES (SIN ORIGEN)
+   ========================================================================== */
+
+.catalog-print-modal-window {
+  max-width: 1100px;
+  width: 95vw;
+  height: 88vh;
+  max-height: 860px;
+}
+
+.catalog-counter-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(6, 182, 212, 0.15);
+  border: 1px solid rgba(6, 182, 212, 0.35);
+  color: var(--accent-cyan);
+  font-weight: 700;
+  font-size: 0.8rem;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+}
+
+.catalog-print-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1rem;
+}
+
+.catalog-scope-selector {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.scope-radio-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.82rem;
+  color: var(--text-main);
+  cursor: pointer;
+  user-select: none;
+}
+
+.scope-radio-label input[type="radio"] {
+  accent-color: var(--accent-cyan);
+  cursor: pointer;
+}
+
+.catalog-print-filters-grid {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.catalog-print-settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.catalog-preview-wrapper {
+  flex: 1;
+  min-height: 220px;
+  max-height: 380px;
+  overflow: auto;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+}
+
+.catalog-preview-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.82rem;
+}
+
+.catalog-preview-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--bg-card);
+}
+
+.catalog-preview-table th {
+  padding: 0.6rem 0.65rem;
+  text-align: left;
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-medium);
+  background: var(--bg-card);
+  white-space: nowrap;
+}
+
+.catalog-preview-table td {
+  padding: 0.55rem 0.65rem;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-main);
+  vertical-align: middle;
+}
+
+.catalog-preview-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.catalog-tipo-badge {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.catalog-tipo-badge.badge-definitiva {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.catalog-tipo-badge.badge-temporal {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+/* Áreas de Impresión Oficiales (ocultas en pantalla, visibles solo al imprimir) */
+#print-area,
+#print-catalog-area {
   display: none;
 }
 
 @media print {
   @page {
     size: letter portrait;
-    margin: 12mm 10mm;
+    margin: 10mm 8mm;
   }
 
   html, body {
@@ -814,11 +959,12 @@
     display: none !important;
   }
 
-  body > *:not(#print-area) {
+  body > *:not(#print-area):not(#print-catalog-area) {
     display: none !important;
   }
 
-  #print-area {
+  /* Modo Impresión de Prelación Personal (Mi Lista) */
+  body:not(.print-mode-catalog) #print-area {
     display: block !important;
     position: static !important;
     width: 100% !important;
@@ -830,30 +976,89 @@
     margin: 0 !important;
   }
 
-  #print-area * {
+  body.print-mode-catalog #print-area {
+    display: none !important;
+  }
+
+  /* Modo Impresión del Catálogo General de Vacantes (Sin cálculo de origen) */
+  body.print-mode-catalog #print-catalog-area {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    color: #111 !important;
+    background: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  body:not(.print-mode-catalog) #print-catalog-area {
+    display: none !important;
+  }
+
+  #print-area *,
+  #print-catalog-area * {
     visibility: visible !important;
   }
 
-  #print-area table {
+  #print-area table,
+  #print-catalog-area table {
     width: 100% !important;
     border-collapse: collapse !important;
     page-break-inside: auto;
   }
 
-  #print-area tr {
+  #print-area tr,
+  #print-catalog-area tr {
     page-break-inside: avoid;
     page-break-after: auto;
   }
 
-  #print-area thead {
+  #print-area thead,
+  #print-catalog-area thead {
     display: table-header-group;
   }
 
-  #print-area tfoot {
+  #print-area tfoot,
+  #print-catalog-area tfoot {
     display: table-footer-group;
   }
 
   .no-print {
     display: none !important;
   }
+
+  /* Estilos específicos de la tabla impresa del Catálogo General */
+  .print-catalog-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 7.6pt !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif !important;
+    margin-top: 4px;
+  }
+
+  .print-catalog-table th {
+    background-color: #f1f5f9 !important;
+    color: #0f172a !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.02em !important;
+    border: 1px solid #cbd5e1 !important;
+    padding: 5px 4px !important;
+    font-size: 7.2pt !important;
+  }
+
+  .print-catalog-table td {
+    border: 1px solid #cbd5e1 !important;
+    padding: 4px 5px !important;
+    color: #1e293b !important;
+    line-height: 1.25 !important;
+    vertical-align: middle !important;
+  }
+
+  .print-catalog-table tbody tr:nth-child(even) {
+    background-color: #f8fafc !important;
+  }
 }
+

@@ -64,6 +64,16 @@
           <span>Comparar (<span id="compare-count">0</span>)</span>
         </button>
 
+        <button class="btn btn-secondary" id="btn-open-catalog-print" title="Imprimir catálogo general de todas las vacantes sin cálculo de origen">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 6 2 18 2 18 9" />
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+            <rect x="6" y="14" width="12" height="8" />
+          </svg>
+          <span>Imprimir Vacantes</span>
+        </button>
+
         <button class="btn btn-primary" id="btn-open-preference-list" title="Mi lista de opciones priorizadas">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <polygon
@@ -215,6 +225,16 @@
         <div class="results-header-bar" style="flex-wrap: wrap; gap: 0.5rem;">
           <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
             <span id="results-count-text">Mostrando 0 vacantes</span>
+            <button class="btn btn-secondary btn-sm" id="btn-quick-print-catalog"
+              title="Abrir herramienta para imprimir todas las vacantes sin cálculo de origen"
+              style="font-size: 0.73rem; padding: 2px 8px; display: inline-flex; align-items: center; gap: 4px;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="6 9 6 2 18 2 18 9" />
+                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                <rect x="6" y="14" width="12" height="8" />
+              </svg>
+              <span>Imprimir todas</span>
+            </button>
             <div id="discarded-summary-bar" style="display: none; align-items: center; gap: 0.4rem;">
               <span class="discard-status-badge" id="discarded-counter-badge"
                 title="Vacantes tachadas o tomadas localmente">
@@ -409,6 +429,180 @@
         <div class="modal-footer">
           <button class="btn btn-secondary" id="btn-clear-comparator">Limpiar selección</button>
           <button class="btn btn-primary" id="btn-close-comparator-btn">Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: Herramienta de Impresión del Catálogo General de Vacantes -->
+    <div class="modal-backdrop" id="catalog-print-modal">
+      <div class="modal-window catalog-print-modal-window">
+        <div class="modal-header">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <div style="width: 38px; height: 38px; border-radius: var(--radius-md); background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.35); display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
+              🖨️
+            </div>
+            <div>
+              <h2 style="margin: 0; font-size: 1.15rem; color: var(--text-main); display: flex; align-items: center; gap: 0.5rem;">
+                Imprimir Catálogo General de Vacantes
+                <span style="font-size: 0.7rem; font-weight: 600; padding: 2px 7px; border-radius: var(--radius-full); background: rgba(255,255,255,0.08); color: var(--text-muted); border: 1px solid var(--border-subtle);">
+                  Sin cálculo de origen
+                </span>
+              </h2>
+              <span style="font-size: 0.76rem; color: var(--text-muted);">
+                Reporte oficial de plazas con CCT, plantel, nivel, turno, ubicación, funciones, horas y observaciones
+              </span>
+            </div>
+          </div>
+          <button class="btn btn-secondary btn-sm" id="btn-close-catalog-print" title="Cerrar ventana">✕</button>
+        </div>
+
+        <div class="modal-body" style="padding: 1.15rem 1.4rem; display: flex; flex-direction: column; gap: 0.85rem;">
+          
+          <!-- Banner Informativo -->
+          <div style="background: rgba(6, 182, 212, 0.06); border: 1px solid rgba(6, 182, 212, 0.2); border-radius: var(--radius-md); padding: 0.7rem 0.9rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 0.6rem;">
+              <span style="font-size: 1.2rem;">📋</span>
+              <div>
+                <strong style="color: var(--accent-cyan); font-size: 0.85rem;" id="catalog-print-event-name">Cargando convocatoria...</strong>
+                <p style="margin: 0; font-size: 0.76rem; color: var(--text-muted);">
+                  Este reporte omite deliberadamente distancias viales y tiempos de traslado desde un origen específico, proporcionando una lista objetiva y universal para el evento de asignación.
+                </p>
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <span class="catalog-counter-badge" id="catalog-print-count-badge">0 vacantes a imprimir</span>
+              <span style="font-size: 0.75rem; color: var(--text-dim);" id="catalog-print-total-raw"></span>
+            </div>
+          </div>
+
+          <!-- Barra de Controles y Filtros de la Herramienta -->
+          <div class="catalog-print-toolbar">
+            
+            <!-- Selector de Alcance -->
+            <div class="catalog-scope-selector">
+              <span style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em;">Alcance:</span>
+              <label class="scope-radio-label">
+                <input type="radio" name="catalog-print-scope" value="all" checked>
+                <span>Todas las vacantes del evento</span>
+              </label>
+              <label class="scope-radio-label">
+                <input type="radio" name="catalog-print-scope" value="current">
+                <span>Vacantes del filtro actual</span>
+              </label>
+            </div>
+
+            <!-- Filtros Rápidos -->
+            <div class="catalog-print-filters-grid">
+              <div class="search-input-wrapper" style="min-width: 220px; flex: 1;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="m21 21-4.3-4.3" />
+                </svg>
+                <input type="text" id="catalog-print-search" class="search-input" style="padding: 0.4rem 0.6rem 0.4rem 2rem; font-size: 0.8rem;"
+                  placeholder="Filtrar por CCT, escuela, localidad...">
+              </div>
+
+              <select id="catalog-print-filter-municipio" class="filter-select" style="font-size: 0.8rem; padding: 0.4rem 0.6rem;">
+                <option value="">Todos los municipios</option>
+              </select>
+
+              <select id="catalog-print-filter-nivel" class="filter-select" style="font-size: 0.8rem; padding: 0.4rem 0.6rem;">
+                <option value="">Todos los niveles</option>
+              </select>
+
+              <select id="catalog-print-filter-turno" class="filter-select" style="font-size: 0.8rem; padding: 0.4rem 0.6rem;">
+                <option value="">Todos los turnos</option>
+              </select>
+
+              <select id="catalog-print-filter-tipo" class="filter-select" style="font-size: 0.8rem; padding: 0.4rem 0.6rem;">
+                <option value="">Definitivas y Temporales</option>
+              </select>
+            </div>
+
+            <!-- Ajustes de Formato de Impresión -->
+            <div class="catalog-print-settings-row">
+              <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                <span style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600;">Ordenar por:</span>
+                <select id="catalog-print-sort" class="sort-select" style="font-size: 0.78rem; padding: 3px 8px;">
+                  <option value="cct">CCT (Clave de Centro de Trabajo)</option>
+                  <option value="municipio">Municipio y Escuela</option>
+                  <option value="name">Nombre de Escuela</option>
+                  <option value="nivel">Nivel Educativo</option>
+                  <option value="asignatura">Asignatura / Función</option>
+                  <option value="tipo">Tipo de Vacante</option>
+                </select>
+
+                <span style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600; margin-left: 0.5rem;">Orientación de hoja:</span>
+                <select id="catalog-print-orientation" class="sort-select" style="font-size: 0.78rem; padding: 3px 8px;">
+                  <option value="landscape" selected>Horizontal (Recomendada para tablas anchas)</option>
+                  <option value="portrait">Vertical</option>
+                </select>
+
+                <label style="display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.78rem; color: var(--text-muted); cursor: pointer; margin-left: 0.5rem;">
+                  <input type="checkbox" id="catalog-print-compact">
+                  <span>Vista compacta</span>
+                </label>
+              </div>
+
+              <button class="btn btn-secondary btn-sm" id="btn-reset-catalog-print-filters" style="font-size: 0.75rem; padding: 3px 8px;">
+                ↺ Restablecer filtros
+              </button>
+            </div>
+
+          </div>
+
+          <!-- Vista Previa de la Tabla del Catálogo -->
+          <div class="catalog-preview-wrapper">
+            <table class="catalog-preview-table">
+              <thead>
+                <tr>
+                  <th style="width: 32px; text-align: center;">#</th>
+                  <th style="width: 95px;">CCT</th>
+                  <th>Plantel / Escuela</th>
+                  <th style="width: 100px;">Nivel</th>
+                  <th style="width: 80px;">Turno</th>
+                  <th style="width: 130px;">Municipio / Localidad</th>
+                  <th style="width: 60px;">Z.E.</th>
+                  <th>Función / Asignatura</th>
+                  <th style="width: 50px; text-align: center;">Horas</th>
+                  <th style="width: 95px; text-align: center;">Tipo</th>
+                  <th style="width: 140px;">Observaciones</th>
+                </tr>
+              </thead>
+              <tbody id="catalog-print-preview-body">
+                <!-- Generado dinámicamente -->
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+
+        <div class="modal-footer" style="justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+          <div style="font-size: 0.76rem; color: var(--text-dim); display: flex; align-items: center; gap: 0.4rem;">
+            <span>💡 <strong>Consejo:</strong> Al pulsar "Imprimir", puedes elegir la opción <em>Guardar como PDF</em> en tu navegador para archivar o compartir el catálogo.</span>
+          </div>
+
+          <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <button class="btn btn-secondary" id="btn-cancel-catalog-print">
+              Cerrar
+            </button>
+            <button class="btn btn-secondary" id="btn-execute-catalog-csv" title="Descargar como archivo de Excel (.CSV) sin origen">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              <span>Exportar Excel (CSV)</span>
+            </button>
+            <button class="btn btn-primary" id="btn-execute-catalog-print" style="box-shadow: 0 0 15px rgba(6, 182, 212, 0.4);">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="6 9 6 2 18 2 18 9" />
+                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                <rect x="6" y="14" width="12" height="8" />
+              </svg>
+              <span>Imprimir / Guardar PDF</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -1045,6 +1239,9 @@
       recorrido carretero estimado.
     </p>
   </div>
+
+  <!-- Área de Impresión Oficial del Catálogo General (Solo visible al imprimir catálogo) -->
+  <div id="print-catalog-area"></div>
 
   <!-- Scripts -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"

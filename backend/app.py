@@ -321,18 +321,162 @@ def get_vacancies(
             elif sort_by == "groups":
                 processed.sort(key=lambda x: x["numero_grupos"], reverse=True)
             elif sort_by == "name":
-                processed.sort(key=lambda x: x["escuela_nombre"])
+                processed.sort(key=lambda x: x["escuela_nombre"] or "")
             elif sort_by == "municipio":
-                processed.sort(key=lambda x: (x["municipio"], x["escuela_nombre"]))
+                processed.sort(key=lambda x: (x["municipio"] or "", x["escuela_nombre"] or ""))
+            elif sort_by == "cct":
+                processed.sort(key=lambda x: x["cct"] or "")
+            elif sort_by == "nivel":
+                processed.sort(key=lambda x: (x["nivel"] or "", x["municipio"] or "", x["escuela_nombre"] or ""))
+            elif sort_by == "tipo":
+                processed.sort(key=lambda x: (x["tipo_vacante"] or "", x["municipio"] or "", x["escuela_nombre"] or ""))
+            elif sort_by == "asignatura":
+                processed.sort(key=lambda x: (x["asignatura"] or "", x["municipio"] or "", x["escuela_nombre"] or ""))
 
             total_items = len(processed)
-            paged_items = processed[offset : offset + limit]
+            if limit <= 0:
+                paged_items = processed[offset:]
+            else:
+                paged_items = processed[offset : offset + limit]
 
             return {
                 "total": total_items,
                 "limit": limit,
                 "offset": offset,
                 "vacancies": paged_items
+            }
+    finally:
+        conn.close()
+
+@app.get("/api/vacancies/catalog")
+def get_vacancies_catalog(
+    event_id: Optional[int] = None,
+    nivel: Optional[str] = None,
+    turno: Optional[str] = None,
+    municipio: Optional[str] = None,
+    zona_economica: Optional[str] = None,
+    tipo_vacante: Optional[str] = None,
+    search: Optional[str] = None,
+    sort_by: str = "cct"
+):
+    """
+    Retorna el catálogo completo de vacantes con su información general institucional
+    sin cálculo de origen, distancias ni tiempos de traslado vial.
+    Optimizado para la herramienta de impresión oficial y exportación.
+    """
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            if not event_id:
+                cursor.execute("SELECT id, nombre, fecha_evento FROM events WHERE activo = 1 ORDER BY id DESC LIMIT 1;")
+                active = cursor.fetchone()
+                if not active:
+                    cursor.execute("SELECT id, nombre, fecha_evento FROM events ORDER BY id DESC LIMIT 1;")
+                    active = cursor.fetchone()
+                if active:
+                    event_id = active["id"]
+                    event_info = active
+                else:
+                    event_info = {"nombre": "Convocatoria General", "fecha_evento": ""}
+            else:
+                cursor.execute("SELECT id, nombre, fecha_evento FROM events WHERE id = %s;", (event_id,))
+                event_info = cursor.fetchone() or {"nombre": "Convocatoria General", "fecha_evento": ""}
+
+            where_clauses = []
+            params = []
+
+            if event_id:
+                where_clauses.append("v.event_id = %s")
+                params.append(event_id)
+
+            if nivel:
+                where_clauses.append("s.nivel = %s")
+                params.append(nivel)
+
+            if turno:
+                where_clauses.append("s.turno = %s")
+                params.append(turno)
+
+            if municipio:
+                where_clauses.append("s.municipio = %s")
+                params.append(municipio)
+
+            if zona_economica:
+                where_clauses.append("s.zona_economica = %s")
+                params.append(zona_economica)
+
+            if tipo_vacante:
+                where_clauses.append("v.tipo_vacante = %s")
+                params.append(tipo_vacante)
+
+            if search:
+                pattern = f"%{search.strip()}%"
+                where_clauses.append("(s.cct LIKE %s OR s.nombre LIKE %s OR s.lugar LIKE %s OR v.asignatura LIKE %s OR v.categoria_funcion LIKE %s)")
+                params.extend([pattern, pattern, pattern, pattern, pattern])
+
+            where_sql = ("WHERE " + " AND ".join(where_clauses)) if where_clauses else ""
+
+            query = f"""
+                SELECT 
+                    v.id AS vacancy_id,
+                    v.event_id,
+                    v.tipo_vacante,
+                    v.categoria_funcion,
+                    v.asignatura,
+                    v.horas,
+                    v.motivo,
+                    v.observaciones,
+                    s.cct,
+                    s.nombre AS escuela_nombre,
+                    s.nivel,
+                    s.turno,
+                    s.numero_grupos,
+                    s.lugar,
+                    s.municipio,
+                    s.estado,
+                    s.latitud,
+                    s.longitud,
+                    s.zona_escolar,
+                    s.sector,
+                    s.zona_economica,
+                    e.nombre AS evento_nombre,
+                    e.fecha_evento AS evento_fecha
+                FROM vacancies v
+                JOIN schools s ON v.cct = s.cct
+                LEFT JOIN events e ON v.event_id = e.id
+                {where_sql}
+            """
+            cursor.execute(query, tuple(params))
+            results = cursor.fetchall()
+
+            items = []
+            for row in results:
+                item = dict(row)
+                item["latitud"] = float(item["latitud"]) if item.get("latitud") is not None else None
+                item["longitud"] = float(item["longitud"]) if item.get("longitud") is not None else None
+                items.append(item)
+
+            if sort_by == "name":
+                items.sort(key=lambda x: (x["escuela_nombre"] or "", x["cct"]))
+            elif sort_by == "municipio":
+                items.sort(key=lambda x: (x["municipio"] or "", x["escuela_nombre"] or "", x["cct"]))
+            elif sort_by == "nivel":
+                items.sort(key=lambda x: (x["nivel"] or "", x["municipio"] or "", x["escuela_nombre"] or ""))
+            elif sort_by == "asignatura":
+                items.sort(key=lambda x: (x["asignatura"] or "", x["municipio"] or ""))
+            elif sort_by == "tipo":
+                items.sort(key=lambda x: (x["tipo_vacante"] or "", x["municipio"] or ""))
+            elif sort_by == "groups":
+                items.sort(key=lambda x: x["numero_grupos"] or 0, reverse=True)
+            else: # "cct"
+                items.sort(key=lambda x: x["cct"] or "")
+
+            return {
+                "total": len(items),
+                "event_id": event_id,
+                "event_name": event_info.get("nombre", "Convocatoria General"),
+                "event_date": event_info.get("fecha_evento", ""),
+                "vacancies": items
             }
     finally:
         conn.close()

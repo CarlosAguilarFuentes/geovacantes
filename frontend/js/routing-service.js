@@ -47,6 +47,24 @@ export class RoutingService {
     }
   }
 
+  async fetchVacanciesCatalog(params = {}) {
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== null && value !== undefined && value !== "") {
+        query.append(key, value);
+      }
+    }
+
+    try {
+      const res = await fetch(`${this.baseUrl}/vacancies/catalog?${query.toString()}`);
+      if (!res.ok) throw new Error("Error al cargar catálogo de vacantes");
+      return await res.json();
+    } catch (err) {
+      console.error(err);
+      return { total: 0, vacancies: [] };
+    }
+  }
+
   async getRoute(originLat, originLon, destCct) {
     const cacheKey = `${originLat.toFixed(4)}_${originLon.toFixed(4)}_${destCct}`;
     if (this.routeCache.has(cacheKey)) {
